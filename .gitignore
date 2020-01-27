@@ -1,0 +1,10 @@
+/facebook-*
+*.csv
+*.ipynb
+# Ignore all files named .DS_Store or ending with .log
+**/.DS_Store
+.ipynb_checkpoints/
+.mypy_cache/
+__pycache__/
+.venv
+jupyter_*
