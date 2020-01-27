@@ -30,7 +30,7 @@ On [Facebook.com](https://www.facebook.com/), go to Settings -> Your Facebook In
 You'll need [Python](https://www.python.org/) 3.5 or newer. Once Python is ready, clone this repository:
 
 ```sh
-> git clone <URL>
+> git clone https://github.com/sbaack/FacebookQuantifier
 ```
 
 [Pandas](https://pandas.pydata.org/) is required. Install this dependency from the `requirements.txt` file (preferably in a virtual environment):
