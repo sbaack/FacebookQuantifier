@@ -6,7 +6,7 @@ This is a problem because Facebook itself and advertisers that target us are usu
 
 FacebookQuantifier gives you a small glimpse of your data double on Facebook. It scans the data provided by Facebook and counts your activities over time, e.g. when and how often you 'liked' something. It creates a spreadsheet (CSV format) that is easy to analyze and/or visualize. Here is a truncated preview:
 
-| date       | friend_added | profile_update  | message_sent | message_received | ... |
+| date       | friend_added | profile_update | message_sent | message_received | ... |
 |:-----------|:-------------|:---------------|:-------------|:-----------------|:----|
 | 2009-05-31 | 3            |                |              |                  | ... |
 | 2009-07-05 |              | 4              |              | 1                | ... |
@@ -44,7 +44,7 @@ You'll need [Python](https://www.python.org/) 3.5 or newer. Once Python is ready
 The easiest way to use this tool is to extract the zip file provided by Facebook into the cloned repository and run `python -m facebook_quantifier`, which will give you an output similar to this:
 
 ```sh
-> python -m facebook_quantifier
+❯ python -m facebook_quantifier
 Checking data in folder 'facebook-exampleuser' for 'exampleuser'
 
 	- Number of dates found for added_friend: 65
@@ -58,16 +58,15 @@ Checking data in folder 'facebook-exampleuser' for 'exampleuser'
 	- Number of dates found for liked_page: 54
 	- Number of dates found for liked_external_pages: 8
 	- Number of dates found for others_posts_timeline: 454
-	- Number of dates found for created_note: 6
+	- Number of dates found for notes: 6
 	- Number of dates found for responded_events: 44
 	- Number of dates found for event_invitations: 139
 	- Number of dates found for group_membership_activity: 14
 	- Number of dates found for group_posts: 81
 	- Number of dates found for profile_updated: 66
-	- Number of dates found for searched: 5
+	- Number of dates found for searches: 5
 	- Number of dates found for ad_interaction: 1
-	- Number of dates found for poked: 9
-	- Number of dates found for voted: 87
+	- Number of dates found for poke: 9
 	- Number of dates found for saved_item: 77
 	- Number of dates found for addressbook_entry: 11
 	- Number of dates found for own_posts_all: 3000
@@ -89,7 +88,7 @@ As you can see, FacebookQuantifier will produce a report detailing what activiti
 If you encounter problems, you might have to specify the location of the data folder and your user name:
 
 ```sh
-> python -m facebook_quantifier --folder="/path/to/facebook-<user name>" --user="your user name"
+python -m facebook_quantifier --folder="/path/to/facebook-<user name>" --user="your user name"
 ```
 
 ## What exactly is FacebookQuantifier doing? What does it need the Facebook user name for?
@@ -122,12 +121,11 @@ The following activities are captured. For an overview of the data Facebook prov
 | created_page              | User created a Facebook page                                            |
 | created_note              | User created a note (similar to pinned posts on timeline)               |
 | others_posts_timeline     | Others posted on the user's timeline                                    |
-| profile_updated            | User updated profile                                                     |
+| profile_updated           | User updated profile                                                    |
 | reactions                 | User 'reacted' with 'Like' or other similar action                      |
 | responded_event           | User responded to event (e.g. 'going')                                  |
 | searched                  | User searched something on Facebook                                     |
 | poked                     | User 'poked' someone                                                    |
-| voted                     | User voted in a poll                                                    |
 | saved_item                | User 'saved' a post or other item                                       |
 | followed_sb_st            | User followed somebody or something                                     |
 | addressbook_entry         | User added someone to Facebook address book                             |
