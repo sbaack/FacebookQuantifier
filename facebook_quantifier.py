@@ -81,6 +81,8 @@ class FacebookQuantifier():
             User searched something on Facebook
         poked : List[date]
             User poked someone
+        voted : List[date]
+            User voted in a poll
         saved_item : List[date]
             User 'saved' a post or other item
         followed_sb_st : List[date]
@@ -162,6 +164,8 @@ class FacebookQuantifier():
                 Path(self.folder, "ads", "advertisers_you've_interacted_with.json"),
             "file_poke":
                 Path(self.folder, "other_activity", "pokes.json"),
+            "file_polls":
+                Path(self.folder, "other_activity", "polls_you_voted_on.json"),
             "file_saved_items":
                 Path(self.folder, "saved_items_and_collections", "saved_items_and_collections.json"),
             "file_following":
