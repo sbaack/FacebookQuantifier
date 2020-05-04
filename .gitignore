@@ -1,4 +1,6 @@
 /facebook-*
+/old_data
+/.vscode
 *.csv
 *.ipynb
 # Ignore all files named .DS_Store or ending with .log
