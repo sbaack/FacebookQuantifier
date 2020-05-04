@@ -31,7 +31,7 @@ class FacebookQuantifier():
     a full overview.
 
     Attributes (required to instantiate object):
-        folder : str
+        folder : Path
             Folder that contains the data provided by Facebook
         user : str
             Name of the Facebook user
@@ -422,7 +422,8 @@ class FacebookQuantifier():
             attribute = getattr(self, data)
             if attribute:
                 if not isinstance(attribute, dict):
-                    # If attribute is list, add it and use attribute name
+                    # If attribute is list, turn into Pandas series, count values
+                    # (i.e. how often an event occurred) and use attribute name
                     # as label for column
                     df_item = pd.DataFrame(
                         pd.Series(attribute).value_counts(), columns=[data]
