@@ -172,6 +172,8 @@ class FacebookQuantifier():
                 Path(self.folder, "following_and_followers", "following.json"),
             "file_addressbook":
                 Path(self.folder, "about_you", "your_address_books.json"),
+            "file_viewed":
+                Path(self.folder, "about_you", "viewed.json"),
         }
 
         self.added_friend = self.get_timestamps(files["file_friend_added"])
@@ -204,6 +206,7 @@ class FacebookQuantifier():
         # functions in order to distinguish between those different types
         self.own_posts = self.get_own_posts(files["file_own_posts"])
         self.messages = self.get_messages()
+        self.viewed = self.get_viewed(files["file_viewed"])
 
     def get_timestamps(self, file_path: Path,
                        timestr: str = "timestamp"
@@ -395,6 +398,58 @@ class FacebookQuantifier():
         )
 
         return posts
+
+    def get_viewed(self, file_path: Path) -> Optional[Dict[str, List[date]]]:
+        json_file = self.load_file(file_path)
+        if not json_file:
+            return None
+
+        views: Dict[str, List[date]] = {
+            "viewed_video": [],
+            "viewed_article": [],
+            "viewed_marketplace_item": []
+        }
+
+        # Each video is listed three times in the data: 'time spend', 'shows'
+        # and and 'time viewed'. Here we only take the latter as it seems
+        # most complete. Moreover, videos are put into categories (e.g.
+        # 'Children'). To loop through all categories, we check if the key in
+        # the json_file is a list - if is is, it's a category where we pull
+        # timestamps from each video using 'time viewed' (at index 2)
+        for key in json_file["viewed_things"][0]:  # Videos are at index 0
+            if isinstance(json_file["viewed_things"][0][key], list):
+                views["viewed_video"].extend(
+                    [
+                        datetime.fromtimestamp(item["timestamp"]).date()
+                        for item in json_file["viewed_things"][0][key][2]["entries"]
+                    ]
+                )
+
+        # Viewed articles are listed at index 1
+        views['viewed_article'].extend(
+            [
+                datetime.fromtimestamp(item["timestamp"]).date()
+                for item in json_file["viewed_things"][1]["entries"]
+            ]
+        )
+
+        # File structured similar to viewed videos and are at index 2
+        # Only difference is that marketplace items are only listed once
+        for key in json_file["viewed_things"][2]:  # Videos are at index 0
+            if isinstance(json_file["viewed_things"][2][key], list):
+                views["viewed_marketplace_item"].extend(
+                    [
+                        datetime.fromtimestamp(item["timestamp"]).date()
+                        for item in json_file["viewed_things"][2][key][0]["entries"]
+                    ]
+                )
+
+        # Remove keys with no entries
+        for key in views:
+            if not views[key]:
+                del views[key]
+
+        return views
 
     def create_dataframe(self):
         """Combine and count detected events in a Pandas DataFrame.
