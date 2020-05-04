@@ -174,6 +174,8 @@ class FacebookQuantifier():
                 Path(self.folder, "about_you", "your_address_books.json"),
             "file_viewed":
                 Path(self.folder, "about_you", "viewed.json"),
+            "file_visited":
+                Path(self.folder, "about_you", "visited.json")
         }
 
         self.added_friend = self.get_timestamps(files["file_friend_added"])
@@ -207,6 +209,7 @@ class FacebookQuantifier():
         self.own_posts = self.get_own_posts(files["file_own_posts"])
         self.messages = self.get_messages()
         self.viewed = self.get_viewed(files["file_viewed"])
+        self.visited = self.get_visited(files["file_visited"])
 
     def get_timestamps(self, file_path: Path,
                        timestr: str = "timestamp"
@@ -450,6 +453,54 @@ class FacebookQuantifier():
                 del views[key]
 
         return views
+
+    def get_visited(self, file_path: Path) -> Optional[Dict[str, List[date]]]:
+        json_file = self.load_file(file_path)
+        if not json_file:
+            return None
+
+        visited: Dict[str, List[date]] = {
+            "visited_profile": [],
+            "visited_page": [],
+            "visited_event_page": [],
+            "visited_group_page": []
+        }
+
+        # Visited profiles are at index 0, pages 1 and so forth
+        visited["visited_profile"].extend(
+            [
+                datetime.fromtimestamp(item["timestamp"]).date()
+                for item in json_file["visited_things"][0]["entries"]
+            ]
+        )
+
+        visited["visited_page"].extend(
+            [
+                datetime.fromtimestamp(item["timestamp"]).date()
+                for item in json_file["visited_things"][1]["entries"]
+            ]
+        )
+
+        visited["visited_event_page"].extend(
+            [
+                datetime.fromtimestamp(item["timestamp"]).date()
+                for item in json_file["visited_things"][2]["entries"]
+            ]
+        )
+
+        visited["visited_group_page"].extend(
+            [
+                datetime.fromtimestamp(item["timestamp"]).date()
+                for item in json_file["visited_things"][3]["entries"]
+            ]
+        )
+
+        # Remove keys with no entries
+        for key in visited:
+            if not visited[key]:
+                del visited[key]
+
+        return visited
 
     def create_dataframe(self):
         """Combine and count detected events in a Pandas DataFrame.
