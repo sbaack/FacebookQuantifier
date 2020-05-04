@@ -175,7 +175,9 @@ class FacebookQuantifier():
             "file_viewed":
                 Path(self.folder, "about_you", "viewed.json"),
             "file_visited":
-                Path(self.folder, "about_you", "visited.json")
+                Path(self.folder, "about_you", "visited.json"),
+            "file_menu_items":
+                Path(self.folder, "interactions", "menu_items.json")
         }
 
         self.added_friend = self.get_timestamps(files["file_friend_added"])
@@ -210,6 +212,7 @@ class FacebookQuantifier():
         self.messages = self.get_messages()
         self.viewed = self.get_viewed(files["file_viewed"])
         self.visited = self.get_visited(files["file_visited"])
+        self.clicked_menu_items = self.get_menu_items(files["file_menu_items"])
 
     def get_timestamps(self, file_path: Path,
                        timestr: str = "timestamp"
@@ -501,6 +504,18 @@ class FacebookQuantifier():
                 del visited[key]
 
         return visited
+
+    def get_menu_items(self, file_path: Path) -> Optional[List[date]]:
+        json_file = self.load_file(file_path)
+        if not json_file:
+            return None
+
+        menu_items = [
+            datetime.fromtimestamp(item["timestamp"]).date()
+            for item in json_file['menu_items'][0]['entries']
+        ]
+
+        return menu_items
 
     def create_dataframe(self):
         """Combine and count detected events in a Pandas DataFrame.
