@@ -195,6 +195,7 @@ class FacebookQuantifier():
         self.searched = self.get_timestamps(files["file_searches"])
         self.ad_interaction = self.get_timestamps(files["file_ad_interaction"])
         self.poked = self.get_timestamps(files["file_poke"])
+        self.voted = self.get_timestamps(files["file_polls"])
         self.saved_item = self.get_timestamps(files["file_saved_items"])
         self.followed_sb_st = self.get_timestamps(files["file_following"])
         self.addressbook_entry = self.get_timestamps(files["file_addressbook"], "created_timestamp")
