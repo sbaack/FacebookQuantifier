@@ -100,6 +100,19 @@ class FacebookQuantifier():
             Keys are 'sent_message' and 'received_message' unless no sent messages
             could be identified (due to user name not found). If that happens, dict
             has only one key named 'send_or_received'
+        viewed : Dict[str, List[date]]
+            Timestamps when user viewed various items. Keys:
+                - 'viewed_video'
+                - 'viewed_article'
+                - 'viewed_marketplace_item'
+        visited : Dict[str, List[date]]
+            Timestamps when user visited other people's profiles or various pages. Keys:
+                - 'visited_profile'
+                - 'visited_page'
+                - 'visited_event_page'
+                - 'visited_group_page'
+        menu_items : List[date]
+            Timestamps when user clicked an item in the user interface
     """
 
     def __init__(self, folder: Path, user: str) -> None:
@@ -406,6 +419,23 @@ class FacebookQuantifier():
         return posts
 
     def get_viewed(self, file_path: Path) -> Optional[Dict[str, List[date]]]:
+        """Get timestamps for viewed items, separated by type of item.
+
+        Captures when user viewed a video, an article or marketplace items.
+        Note that each video viewed is listed three times in the data: 'time spend',
+        'shows' and 'time viewed'. Here we only take the latter as it seems most
+        complete. Moreover, videos and marketplace items are put into categories
+        (e.g. 'Children'). To loop through all categories, we check if the key in
+        the json_file is a list - if is is, it's a category where we pull
+        timestamps.
+
+        Args:
+            file_path (Path): Path to JSON file
+
+        Returns:
+            Optional[Dict[str, List[date]]]:
+                Dict with lists of timestamps, keys are types of item viewed.
+        """
         json_file = self.load_file(file_path)
         if not json_file:
             return None
@@ -416,12 +446,6 @@ class FacebookQuantifier():
             "viewed_marketplace_item": []
         }
 
-        # Each video is listed three times in the data: 'time spend', 'shows'
-        # and and 'time viewed'. Here we only take the latter as it seems
-        # most complete. Moreover, videos are put into categories (e.g.
-        # 'Children'). To loop through all categories, we check if the key in
-        # the json_file is a list - if is is, it's a category where we pull
-        # timestamps from each video using 'time viewed' (at index 2)
         for key in json_file["viewed_things"][0]:  # Videos are at index 0
             if isinstance(json_file["viewed_things"][0][key], list):
                 views["viewed_video"].extend(
@@ -458,6 +482,15 @@ class FacebookQuantifier():
         return views
 
     def get_visited(self, file_path: Path) -> Optional[Dict[str, List[date]]]:
+        """Get timestamps for viewed profiles or page, separated by type of page.
+
+        Args:
+            file_path (Path): Path to JSON file
+
+        Returns:
+            Optional[Dict[str, List[date]]]:
+                Dict with lists of timestamps, keys are types of pages viewed.
+        """
         json_file = self.load_file(file_path)
         if not json_file:
             return None
@@ -506,6 +539,15 @@ class FacebookQuantifier():
         return visited
 
     def get_menu_items(self, file_path: Path) -> Optional[List[date]]:
+        """Get timestamps for clicked menu items.
+
+        Args:
+            file_path (Path): Path to JSON file
+
+        Returns:
+            Optional[List[date]]:
+                List of timestamps
+        """
         json_file = self.load_file(file_path)
         if not json_file:
             return None
