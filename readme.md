@@ -167,7 +167,7 @@ On the other hand, Facebook added new data:
 - Viewed videos, articles, marketplace items
 - Visited profiles and pages
 
-Unfortunately, the list of recent interactions with people is no replacement for the removed data. Indeed, it is so unclear what it means that I decided not to parse it (see 'What is not captured?' below). The new data about clicked menu items and visited profiles and pages is confusing as well. Some of the items listed in clicked menu items are Facebook pages or group pages, but their timestamps cannot be found in my visited.json file. Did I click the item without visiting the page? What does count as 'visited'? I added the timestamps in those files to the spreadsheet, but more research is needed to really understand what it means.
+Unfortunately, the list of recent interactions with people is no replacement for the removed data. Indeed, it is so unclear what it means that I decided not to parse it (see 'What is not captured?' below). The new data about clicked menu items and visited profiles and pages is confusing as well. Some of the items listed in clicked menu items are Facebook pages or group pages, but their timestamps cannot be found in my visited.json file. Did I click the item without visiting the page? What counts as 'visited' when clicking a menu item is not automatically become a visit? I added the timestamps in those files to the spreadsheet, but more research is needed to really understand what it means.
 
 ## What is not captured?
 
