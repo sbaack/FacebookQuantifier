@@ -158,9 +158,9 @@ The following activities are captured. For an overview of the data Facebook prov
 
 ## Update May 2020: Changes to the data provided by Facebook
 
-At some point after January 2020, Facebook removed the file 'other_people's_posts_to_your_timeline.json', which contained information about other people's post on your own timeline from the downloadable archive. This information is now only available online in [Facebook's Activity Log](https://www.facebook.com/me/allactivity). If you're lucky enough to have a copy of your data from January 2020 or earlier, make sure to keep this data. I decided to keep the code to parse this data.
+At some point after January 2020, Facebook removed the file 'other_people's_posts_to_your_timeline.json', which contained information about other people's post on your own timeline from the downloadable archive. This information is now only available online in [Facebook's Activity Log](https://www.facebook.com/me/allactivity). If you're lucky enough to have a copy of your data from January 2020 or earlier, make sure to keep this data. I decided to keep the code to parse this information.
 
-On the other hand, Facebook added new data:
+On the other hand, Facebook added new data. Relevant for this tool are:
 
 - 'Recent' interactions with people
 - Clicked menu items
