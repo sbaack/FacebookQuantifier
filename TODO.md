@@ -1,1 +1,1 @@
-- [ ] Check if you can replace isinstance() with function overloading, which seems to be easier. See examples at https://towardsdatascience.com/the-correct-way-to-overload-functions-in-python-b11b50ca7
+- [ ] Check if you can replace isinstance() with function overloading, which seems to be easier. See examples at https://towardsdatascience.com/the-correct-way-to-overload-functions-in-python-b11b50ca7336
