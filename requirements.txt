@@ -4,8 +4,13 @@
 #
 #    pip-compile
 #
-numpy==1.18.4             # via pandas
-pandas==1.0.3             # via -r requirements.in
-python-dateutil==2.8.1    # via pandas
-pytz==2020.1              # via pandas
-six==1.14.0               # via python-dateutil
+numpy==1.20.3
+    # via pandas
+pandas==1.2.4
+    # via -r requirements.in
+python-dateutil==2.8.1
+    # via pandas
+pytz==2021.1
+    # via pandas
+six==1.16.0
+    # via python-dateutil
