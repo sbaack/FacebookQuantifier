@@ -13,11 +13,11 @@ provided in a format that makes it easy to analyze.
 
 import argparse
 import json
-from datetime import date, datetime
+import sys
+from datetime import date, datetime  # 'date' used for type hints only
 from pathlib import Path
 from re import findall
-from sys import exit
-from typing import Dict, List, Optional
+from typing import Optional
 
 import pandas as pd
 
@@ -28,7 +28,9 @@ class FacebookQuantifier():
     To count user activity, this class extracts timestamps found in a pre-
     defined list of files contained in the Facebook data, marking the date
     of varies user activities. See the list of data attributes below for
-    a full overview.
+    a full overview. Note that Facebook is continuously changing what
+    information is available in the downloadable archive and some of these
+    data attributes are only available in older versions of the archive.
 
     Attributes (required to instantiate object):
         folder : Path
@@ -36,82 +38,84 @@ class FacebookQuantifier():
         user : str
             Name of the Facebook user
 
-    Data Attributes (automatically generated upon instantiation):
-        ad_interaction: List[date]
+    Possible data attributes (automatically generated upon instantiation):
+        ad_interaction: list[date]
             User clicked on an ad
-        added_friend : List[date]
+        added_friend : list[date]
             User connected with someone on Facebook
-        received_friend_request : List[date]
+        received_friend_request : list[date]
             User received friend request
             Note: Only pending requests which have not been accepted
-        rejected_friend_reject : List[date]
+        rejected_friend_reject : list[date]
             User rejected friend request
-        removed_friend : List[date]
+        removed_friend : list[date]
             User removed friend
-        apps_posts : List[date]
+        apps_posts : list[date]
             Installed Facebook app posted on the user's timeline
-        commented : List[date]
+        commented : list[date]
             User commented on posts from friends
             Note: 'posts' includes photos
-        event_invitation : List[date]
+        event_invitation : list[date]
             User received event invitation
-        group_membership_activity (List[date]):
+        group_membership_activity (list[date]):
             User interacted with group (e.g. by joining them)
-        group_posts : List[date]
+        group_posts : list[date]
             User posted in group
-        installed_app : List[date]
+        installed_app : list[date]
             User installed Facebook apps
-        liked_external_pages : List[date]
+        liked_external_pages : list[date]
             User clicked the 'Like' button on external site
-        liked_page : List[date]
+        liked_page : list[date]
             User liked a Facebook page
-        created_page : List[date]
+        created_page : list[date]
             User created a Facebook page
-        created_note : List[date]
+        created_note : list[date]
             User created a note (similar to pinned posts on timeline)
-        others_posts_timeline : List[date]
+        others_posts_timeline : list[date]
             Others posted on the user's timeline
-        profile_updated : List[date]
+        profile_updated : list[date]
             User updated her profile
-        reactions : List[date]
+        reactions : list[date]
             User 'reacted' with 'Like' or other similar action
-        responded_event : List[date]
+        responded_event : list[date]
             User reacted to events (e.g. 'going')
-        searched : List[date]
+        searched : list[date]
             User searched something on Facebook
-        poked : List[date]
+        poked : list[date]
             User poked someone
-        voted : List[date]
+        voted : list[date]
             User voted in a poll
-        saved_item : List[date]
+        saved_item : list[date]
             User 'saved' a post or other item
-        followed_sb_st : List[date]
+        followed_sb_st : list[date]
             User followed somebody or something
-        addressbook_entry : List[date]
+        addressbook_entry : list[date]
             User added someone to Facebook address book
-        own_posts : Dict[str, List[date]]
+        own_posts : dict[str, list[date]]
             User posted on own timeline. Dict keys are:
                 - 'own_posts_all' (anything posted)
                 - 'own_posts_media' (photos and videos only)
                 - 'own_posts_text_only' (no links or media)
                 - 'own_posts_links' (links or links + text)
-        messages : Dict[str, List[date]]
+        messages : dict[str, list[date]]
             Timestamps when user received or sent a message in Facebook messenger.
             Keys are 'sent_message' and 'received_message' unless no sent messages
             could be identified (due to user name not found). If that happens, dict
             has only one key named 'send_or_received'
-        viewed : Dict[str, List[date]]
-            Timestamps when user viewed various items. Keys:
+        viewed : dict[str, list[date]]
+            Timestamps when user viewed various items. Possible keys:
                 - 'viewed_video'
                 - 'viewed_article'
                 - 'viewed_marketplace_item'
-        visited : Dict[str, List[date]]
-            Timestamps when user visited other people's profiles or various pages. Keys:
+        visited : dict[str, list[date]]
+            Timestamps when user visited other people's profiles or various pages.
+            Possible keys:
                 - 'visited_profile'
                 - 'visited_page'
                 - 'visited_event_page'
                 - 'visited_group_page'
-        menu_items : List[date]
+                - 'visited_marketplace'
+        menu_items : list[date]
             Timestamps when user clicked an item in the user interface
     """
 
@@ -132,108 +136,91 @@ class FacebookQuantifier():
         self.folder = folder
         self.user = user.replace(" ", "").lower()
 
-        files = {
-            "file_friend_added":
-                Path(self.folder, "friends", "friends.json"),
-            "file_received_friend_request":
-                Path(self.folder, "friends", "received_friend_requests.json"),
-            "file_rejected_friend_reject":
-                Path(self.folder, "friends", "rejected_friend_requests.json"),
-            "file_friend_removed":
-                Path(self.folder, "friends", "removed_friends.json"),
-            "file_app_installs":
-                Path(self.folder, "apps_and_websites", "apps_and_websites.json"),
-            "file_comments":
-                Path(self.folder, "comments", "comments.json"),
-            "file_reactions":
-                Path(self.folder, "likes_and_reactions", "posts_and_comments.json"),
-            "file_own_posts":
-                Path(self.folder, "posts", "your_posts_1.json"),
-            "file_others_posts":
-                Path(self.folder, "posts", "other_people's_posts_to_your_timeline.json"),
-            "file_notes":
-                Path(self.folder, "posts", "notes.json"),
-            "file_eventresponse":
-                Path(self.folder, "events", "your_event_responses.json"),
-            "file_group_membership":
-                Path(self.folder, "groups", "your_group_membership_activity.json"),
-            "file_group_posts":
-                Path(self.folder, "groups", "your_posts_and_comments_in_groups.json"),
-            "file_posts_apps":
-                Path(self.folder, "apps_and_websites", "posts_from_apps_and_websites.json"),
-            "file_event_invites":
-                Path(self.folder, "events", "event_invitations.json"),
-            "file_liked_pages":
-                Path(self.folder, "likes_and_reactions", "pages.json"),
-            "file_created_page":
-                Path(self.folder, "pages", "your_pages.json"),
-            "file_liked_external":
-                Path(self.folder, "likes_and_reactions", "likes_on_external_sites.json"),
-            "file_profile_update":
-                Path(self.folder, "profile_information", "profile_update_history.json"),
-            "file_searches":
-                Path(self.folder, "search_history", "your_search_history.json"),
-            "file_ad_interaction":
-                Path(self.folder, "ads", "advertisers_you've_interacted_with.json"),
-            "file_poke":
-                Path(self.folder, "other_activity", "pokes.json"),
-            "file_polls":
-                Path(self.folder, "other_activity", "polls_you_voted_on.json"),
-            "file_saved_items":
-                Path(self.folder, "saved_items_and_collections", "saved_items_and_collections.json"),
-            "file_following":
-                Path(self.folder, "following_and_followers", "following.json"),
-            "file_addressbook":
-                Path(self.folder, "about_you", "your_address_books.json"),
-            "file_viewed":
-                Path(self.folder, "about_you", "viewed.json"),
-            "file_visited":
-                Path(self.folder, "about_you", "visited.json"),
-            "file_menu_items":
-                Path(self.folder, "interactions", "menu_items.json")
-        }
+        self.json_files = list(Path(self.folder).rglob("*.json"))
 
-        self.added_friend = self.get_timestamps(files["file_friend_added"])
-        self.received_friend_request = self.get_timestamps(files["file_received_friend_request"])
-        self.rejected_friend_reject = self.get_timestamps(files["file_rejected_friend_reject"])
-        self.removed_friend = self.get_timestamps(files["file_friend_removed"])
-        self.installed_app = self.get_timestamps(files["file_app_installs"], "added_timestamp")
-        self.apps_posts = self.get_timestamps(files["file_posts_apps"])
-        self.commented = self.get_timestamps(files["file_comments"])
-        self.reactions = self.get_timestamps(files["file_reactions"])
-        self.liked_page = self.get_timestamps(files["file_liked_pages"])
-        self.created_page = self.get_timestamps(files["file_created_page"])
-        self.liked_external_pages = self.get_timestamps(files["file_liked_external"])
-        self.others_posts_timeline = self.get_timestamps(files["file_others_posts"])
-        self.created_note = self.get_timestamps(files["file_notes"], "created_timestamp")
-        self.responded_event = self.get_timestamps(files["file_eventresponse"], "start_timestamp")
-        self.event_invitation = self.get_timestamps(files["file_event_invites"], "start_timestamp")
-        self.group_membership_activity = self.get_timestamps(files["file_group_membership"])
-        self.group_posts = self.get_timestamps(files["file_group_posts"])
-        self.profile_updated = self.get_timestamps(files["file_profile_update"])
-        self.searched = self.get_timestamps(files["file_searches"])
-        self.ad_interaction = self.get_timestamps(files["file_ad_interaction"])
-        self.poked = self.get_timestamps(files["file_poke"])
-        self.voted = self.get_timestamps(files["file_polls"])
-        self.saved_item = self.get_timestamps(files["file_saved_items"])
-        self.followed_sb_st = self.get_timestamps(files["file_following"])
-        self.addressbook_entry = self.get_timestamps(files["file_addressbook"], "created_timestamp")
+        for file in self.json_files:
+            if file.name == "friends.json":
+                self.added_friend = self.get_timestamps(file)
+            # File named differently in different versions of the archive
+            elif file.name in ["received_friend_requests.json",
+                               "friend_requests_received.json"]:
+                self.received_friend_request = self.get_timestamps(file)
+            elif file.name == "rejected_friend_requests.json":
+                self.rejected_friend_reject = self.get_timestamps(file)
+            elif file.name == "removed_friends.json":
+                self.removed_friend = self.get_timestamps(file)
+            elif file.name == "apps_and_websites.json":
+                self.installed_app = self.get_timestamps(file, "added_timestamp")
+            elif file.name == "comments.json":
+                self.commented = self.get_timestamps(file)
+            elif file.name == "posts_and_comments.json":
+                self.reactions = self.get_timestamps(file)
+            elif file.name == "other_people's_posts_to_your_timeline.json":
+                self.others_posts_timeline = self.get_timestamps(file)
+            # Only available in older versions of the downloaded archive
+            elif file.name == "notes.json":
+                self.created_note = self.get_timestamps(file, "created_timestamp")
+            elif file.name == "your_event_responses.json":
+                self.responded_event = self.get_timestamps(file, "start_timestamp")
+            elif file.name == "your_group_membership_activity.json":
+                self.group_membership_activity = self.get_timestamps(file)
+            elif file.name == "your_posts_and_comments_in_groups.json":
+                self.group_posts = self.get_timestamps(file)
+            elif file.name == "posts_from_apps_and_websites.json":
+                self.apps_posts = self.get_timestamps(file)
+            elif file.name == "event_invitations.json":
+                self.event_invitation = self.get_timestamps(file, "start_timestamp")
+            # File named differently in different versions of the archive
+            elif file.name in ["pages.json", "pages_you've_liked.json"]:
+                self.liked_page = self.get_timestamps(file)
+            elif file.name == "your_pages.json":
+                self.created_page = self.get_timestamps(file)
+            # Only available in older versions of the downloaded archive
+            elif file.name == "likes_on_external_sites.json":
+                self.liked_external_pages = self.get_timestamps(file)
+            elif file.name == "profile_update_history.json":
+                self.profile_updated = self.get_timestamps(file)
+            elif file.name == "your_search_history.json":
+                self.searched = self.get_timestamps(file)
+            # Only available in older versions of the downloaded archive
+            elif file.name == "advertisers_you've_interacted_with.json":
+                self.ad_interaction = self.get_timestamps(file)
+            elif file.name == "pokes.json":
+                self.poked = self.get_timestamps(file)
+            elif file.name == "polls_you_voted_on.json":
+                self.voted = self.get_timestamps(file)
+            elif file.name == "saved_items_and_collections.json":
+                self.saved_item = self.get_timestamps(file)
+            # File named differently in different versions of the archive
+            elif file.name in ["following.json", "who_you_follow.json"]:
+                self.followed_sb_st = self.get_timestamps(file)
+            # Only available in older versions of the downloaded archive
+            elif file.name == "your_address_books.json":
+                self.addressbook_entry = self.get_timestamps(file, "created_timestamp")
 
-        # These files contain various types of events and require dedicated
-        # functions in order to distinguish between those different types
-        self.own_posts = self.get_own_posts(files["file_own_posts"])
+            # These files contain various types of events and require dedicated
+            # functions in order to distinguish between those different types
+            elif file.name == "your_posts_1.json":
+                self.own_posts = self.get_own_posts(file)
+            # File named differently in different versions of the archive
+            elif file.name in ["viewed.json", "recently_viewed.json"]:
+                self.viewed = self.get_viewed(file)
+            # File named differently in different version of the archive
+            elif file.name in ["visited.json", "recently_visited.json"]:
+                self.visited = self.get_visited(file)
+            # Only available in older versions of the downloaded archive
+            elif file.name == "menu_items.json":
+                self.clicked_menu_items = self.get_menu_items(file)
+        # Messages are analyzed separately
         self.messages = self.get_messages()
-        self.viewed = self.get_viewed(files["file_viewed"])
-        self.visited = self.get_visited(files["file_visited"])
-        self.clicked_menu_items = self.get_menu_items(files["file_menu_items"])
 
     def get_timestamps(self, file_path: Path,
                        timestr: str = "timestamp"
-                       ) -> Optional[List[date]]:
+                       ) -> Optional[list[date]]:
         """Extract timestamps from files.
 
         First, try to get timestamps assuming that they are inside a
-        Dict[List[Dict]] structure. This is how most of the files provided
+        dict[list[dict]] structure. This is how most of the files provided
         by Facebook are structured. If that returns an empty list, try again
         assuming a deeper nesting.
 
@@ -246,26 +233,24 @@ class FacebookQuantifier():
                 for example. This arg makes sure the right term is used.
 
         Returns:
-            Optional[List[date]]: Lists of timestamps found in the data.
+            Optional[list[date]]: Lists of timestamps found in the data.
         """
         json_file = self.load_file(file_path)
-        if not json_file:
-            return None
 
         # JSON file is a dict structured as:
-        # Dict[List[Dict[str, str]]]
+        # dict[str, list[dict[str, int]]]
         timestamps = [
             datetime.fromtimestamp(item[timestr]).date()
             for value in json_file.values()
-            # Unpack list in: Dict[List]
+            # Unpack list in: dict[str, list]
             for item in value
-            # Check nested dict in: Dict[List[Dict]]
+            # Check nested dict in: dict[str, list[dict]]
             if timestr in item
         ]
 
         if not timestamps:
             # JSON file is a dict structured as:
-            # Dict[Dict[List[Dict[str, str]]]]
+            # dict[str, dict[str, list[dict[str, int]]]]
             timestamps = [
                 datetime.fromtimestamp(item[timestr]).date()
                 for key in json_file
@@ -279,10 +264,8 @@ class FacebookQuantifier():
             return None
         return timestamps
 
-    def load_file(self, file_path: Path):  # -> JSON
+    def load_file(self, file_path: Path):
         """Load data into JSON.
-
-        Returns None is file is not found.
 
         Args:
             file_path (Path): Path to JSON file.
@@ -290,13 +273,10 @@ class FacebookQuantifier():
         Returns:
             JSON: The input file loaded as JSON.
         """
-        if not file_path.is_file():
-            return None
         with open(file_path) as data_file:
-            json_file = json.load(data_file)
-        return json_file
+            return json.load(data_file)
 
-    def get_messages(self) -> Optional[Dict[str, List[date]]]:
+    def get_messages(self) -> Optional[dict[str, list[date]]]:
         """Get timestamps from message files.
 
         Loops through files in messages folder and collects timestamps
@@ -305,19 +285,24 @@ class FacebookQuantifier():
         inside each JSON file.
 
         Returns:
-            Optional[Dict[str, List[date]]]:
+            Optional[dict[str, list[date]]]:
                 Dict with lists of timestamps; keys are 'sent'
                 and 'received' messages
         """
-        # Get list of all message files using rglob. Turn into
-        # list to be able to check if empty
-        files_messages = list(
-            Path(self.folder, "messages").rglob("*.json")
-        )
+        # Newer versions of downloadable archive include extra files that
+        # don't contain information relevant here
+        exclude: list[str] = ["autofill_information.json", "secret_groups.json"]
+        files_messages: list[Path] = [
+            dir for dir in self.json_files
+            if Path(self.folder, 'messages') in dir.parents
+            if dir.name not in exclude
+        ]
         if not files_messages:
             return None
 
-        messages: Dict[str, List[date]] = {
+        # To collect items across multiple files, create lists of dict directly
+        # and extend them with each file
+        messages: dict[str, list[date]] = {
             "message_sent": [],
             "message_received": []
         }
@@ -345,7 +330,8 @@ class FacebookQuantifier():
         if not messages["message_sent"]:
             # If no sent messages could be detected, it means that the user name wasn't
             # found in message files. If that happens, rename 'message_received' to
-            # 'message_received_or_sent' to indicate lack of distinction
+            # 'message_received_or_sent' and remove 'messages_sent' to indicate lack
+            # of distinction
             print(
                 "No sent messages found, verify if the provided user name is "
                 "identical to the name used in Facebook Messenger.\n"
@@ -355,7 +341,7 @@ class FacebookQuantifier():
 
         return messages
 
-    def get_own_posts(self, file_path: Path) -> Optional[Dict[str, List[date]]]:
+    def get_own_posts(self, file_path: Path) -> Optional[dict[str, list[date]]]:
         """Get timestamps for own posts, separated by type of post.
 
         To determine different types of posts (media, text only, link), turn
@@ -369,56 +355,41 @@ class FacebookQuantifier():
             file_path (Path): Path to JSON file
 
         Returns:
-            Optional[Dict[str, List[date]]]:
+            Optional[dict[str, list[date]]]:
                 Dict with lists of timestamps, keys are types of posts.
         """
         json_file = self.load_file(file_path)
-        if not json_file:
-            return None
 
-        posts: Dict[str, List[date]] = {
-            "own_posts_all": [],
-            "own_posts_media": [],
-            "own_posts_text_only": [],
-            "own_posts_links": []
-        }
+        posts: dict[str, list[date]] = {}
 
-        posts["own_posts_all"].extend(
-            [
-                datetime.fromtimestamp(item["timestamp"]).date()
-                for item in json_file
-            ]
-        )
+        posts["own_posts_all"] = [
+            datetime.fromtimestamp(item["timestamp"]).date()
+            for item in json_file
+        ]
 
-        posts["own_posts_media"].extend(
-            [
-                datetime.fromtimestamp(item["timestamp"]).date()
-                for item in json_file
-                if "media" in str(item.values())
-            ]
-        )
+        posts["own_posts_media"] = [
+            datetime.fromtimestamp(item["timestamp"]).date()
+            for item in json_file
+            if "media" in str(item.values())
+        ]
 
-        posts["own_posts_text_only"].extend(
-            [
-                datetime.fromtimestamp(item["timestamp"]).date()
-                for item in json_file
-                if "external_context" not in str(item.values())
-                if "media" not in str(item.values())
-            ]
-        )
+        posts["own_posts_text_only"] = [
+            datetime.fromtimestamp(item["timestamp"]).date()
+            for item in json_file
+            if "external_context" not in str(item.values())
+            if "media" not in str(item.values())
+        ]
 
-        posts["own_posts_links"].extend(
-            [
-                datetime.fromtimestamp(item["timestamp"]).date()
-                for item in json_file
-                if "external_context" in str(item.values())
-                if "media" not in str(item.values())
-            ]
-        )
+        posts["own_posts_links"] = [
+            datetime.fromtimestamp(item["timestamp"]).date()
+            for item in json_file
+            if "external_context" in str(item.values())
+            if "media" not in str(item.values())
+        ]
 
         return posts
 
-    def get_viewed(self, file_path: Path) -> Optional[Dict[str, List[date]]]:
+    def get_viewed(self, file_path: Path) -> Optional[dict[str, list[date]]]:
         """Get timestamps for viewed items, separated by type of item.
 
         Captures when user viewed a video, an article or marketplace items.
@@ -433,133 +404,118 @@ class FacebookQuantifier():
             file_path (Path): Path to JSON file
 
         Returns:
-            Optional[Dict[str, List[date]]]:
+            Optional[dict[str, list[date]]]:
                 Dict with lists of timestamps, keys are types of item viewed.
         """
         json_file = self.load_file(file_path)
-        if not json_file:
-            return None
 
-        views: Dict[str, List[date]] = {
-            "viewed_video": [],
-            "viewed_article": [],
-            "viewed_marketplace_item": []
-        }
+        views: dict[str, list[date]] = {}
 
-        for key in json_file["viewed_things"][0]:  # Videos are at index 0
-            if isinstance(json_file["viewed_things"][0][key], list):
-                views["viewed_video"].extend(
-                    [
+        # Older versions of the personal data archive used a different key.
+        # First check if old key available, otherwise use new key
+        if not json_file.get("viewed_things"):
+            json_key: str = "recently_viewed"
+        else:
+            json_key = "viewed_things"
+
+        for category in json_file[json_key]:
+            if category['name'] == "Facebook Watch Videos and Shows":
+                for watchtype in category['children']:
+                    if watchtype['name'] == "Time Viewed":
+                        views["viewed_video"] = [
+                            datetime.fromtimestamp(item["timestamp"]).date()
+                            for item in watchtype['entries']
+                        ]
+            if category['name'] == "Articles":
+                views['viewed_article'] = [
+                    datetime.fromtimestamp(item["timestamp"]).date()
+                    for item in category["entries"]
+                ]
+            # "Marketplace" entry only available in older versions of the
+            # downloadable archive. Includes views of marketplace items.
+            # In newer versions, this information is available in 'recently
+            # visted'. Newer versions of the 'viewed' overview also show
+            # when a marketplace item was shown on Facebook, regardless of
+            # whether the user interacted with it.
+            if category['name'] == "Marketplace":
+                for market_view in category['children']:
+                    views["viewed_marketplace_item"] = [
                         datetime.fromtimestamp(item["timestamp"]).date()
-                        for item in json_file["viewed_things"][0][key][2]["entries"]
+                        for item in market_view['entries']
                     ]
-                )
-
-        # Viewed articles are listed at index 1
-        views['viewed_article'].extend(
-            [
-                datetime.fromtimestamp(item["timestamp"]).date()
-                for item in json_file["viewed_things"][1]["entries"]
-            ]
-        )
-
-        # File structured similar to viewed videos and are at index 2
-        # Only difference is that marketplace items are only listed once
-        for key in json_file["viewed_things"][2]:  # Videos are at index 0
-            if isinstance(json_file["viewed_things"][2][key], list):
-                views["viewed_marketplace_item"].extend(
-                    [
-                        datetime.fromtimestamp(item["timestamp"]).date()
-                        for item in json_file["viewed_things"][2][key][0]["entries"]
-                    ]
-                )
-
-        # Remove keys with no entries
-        for key in views:
-            if not views[key]:
-                del views[key]
-
         return views
 
-    def get_visited(self, file_path: Path) -> Optional[Dict[str, List[date]]]:
+    def get_visited(self, file_path: Path) -> Optional[dict[str, list[date]]]:
         """Get timestamps for viewed profiles or page, separated by type of page.
 
         Args:
             file_path (Path): Path to JSON file
 
         Returns:
-            Optional[Dict[str, List[date]]]:
+            Optional[dict[str, list[date]]]:
                 Dict with lists of timestamps, keys are types of pages viewed.
         """
         json_file = self.load_file(file_path)
-        if not json_file:
-            return None
 
-        visited: Dict[str, List[date]] = {
-            "visited_profile": [],
-            "visited_page": [],
-            "visited_event_page": [],
-            "visited_group_page": []
-        }
+        # Older versions of the personal data archive used a different key.
+        # First check if old key available, otherwise use new key
+        if not json_file.get("visited_things"):
+            json_key: str = "visited_things_v2"
+        else:
+            json_key = "visited_things"
 
-        # Visited profiles are at index 0, pages 1 and so forth
-        visited["visited_profile"].extend(
-            [
-                datetime.fromtimestamp(item["timestamp"]).date()
-                for item in json_file["visited_things"][0]["entries"]
-            ]
-        )
+        visited: dict[str, list[date]] = {}
 
-        visited["visited_page"].extend(
-            [
-                datetime.fromtimestamp(item["timestamp"]).date()
-                for item in json_file["visited_things"][1]["entries"]
-            ]
-        )
-
-        visited["visited_event_page"].extend(
-            [
-                datetime.fromtimestamp(item["timestamp"]).date()
-                for item in json_file["visited_things"][2]["entries"]
-            ]
-        )
-
-        visited["visited_group_page"].extend(
-            [
-                datetime.fromtimestamp(item["timestamp"]).date()
-                for item in json_file["visited_things"][3]["entries"]
-            ]
-        )
-
-        # Remove keys with no entries
-        for key in visited:
-            if not visited[key]:
-                del visited[key]
+        for category in json_file[json_key]:
+            if category['name'] == "Profile visits":
+                visited["visited_profile"] = [
+                    datetime.fromtimestamp(item["timestamp"]).date()
+                    for item in category["entries"]
+                ]
+            if category['name'] == "Page visits":
+                visited["visited_page"] = [
+                    datetime.fromtimestamp(item["timestamp"]).date()
+                    for item in category["entries"]
+                ]
+            if category['name'] == "Events visited":
+                visited["visited_event_page"] = [
+                    datetime.fromtimestamp(item["timestamp"]).date()
+                    for item in category["entries"]
+                ]
+            if category['name'] == "Groups visited":
+                visited["visited_group_page"] = [
+                    datetime.fromtimestamp(item["timestamp"]).date()
+                    for item in category["entries"]
+                ]
+            # This information is only available in newer versions of the downloadable
+            # archive. Different to other data points, the date is represented as a
+            # string formatted as 'Sep 20, 2014', which we're converting here
+            if category['name'] == "Marketplace Visits":
+                visited["visited_marketplace"] = [
+                    datetime.strptime(item['data']['value'], '%b %d, %Y')
+                    for item in category["entries"]
+                ]
 
         return visited
 
-    def get_menu_items(self, file_path: Path) -> Optional[List[date]]:
+    def get_menu_items(self, file_path: Path) -> Optional[list[date]]:
         """Get timestamps for clicked menu items.
 
         Args:
             file_path (Path): Path to JSON file
 
         Returns:
-            Optional[List[date]]:
+            Optional[list[date]]:
                 List of timestamps
         """
         json_file = self.load_file(file_path)
-        if not json_file:
-            return None
 
-        menu_items = [
+        return [
             datetime.fromtimestamp(item["timestamp"]).date()
             for item in json_file['menu_items'][0]['entries']
         ]
 
-        return menu_items
-
-    def create_dataframe(self):
+    def create_dataframe(self) -> pd.DataFrame:
         """Combine and count detected events in a Pandas DataFrame.
 
         Loop through all the relevant attributes of the FacebookQuantifier
@@ -575,8 +531,8 @@ class FacebookQuantifier():
         df_complete = pd.DataFrame()
 
         # Make a list of the data attributes of the FacebookQuantifier class
-        exclude = ["folder", "user"]
-        data_points = [
+        exclude: list[str] = ["folder", "user", "json_files"]
+        data_points: list[str] = [
             attribute for attribute in self.__dict__
             if attribute not in exclude
         ]
@@ -595,8 +551,8 @@ class FacebookQuantifier():
                     df_item = df_item.sort_index()
                     df_complete = df_complete.join(df_item, how="outer")
                 else:
-                    # If attribute is Dict, add values of each key individually
-                    # and use Dict key as label for column
+                    # If attribute is dict, add values of each key individually
+                    # and use dict key as label for column
                     for key, value in attribute.items():
                         df_item = pd.DataFrame(
                             pd.Series(value).value_counts(), columns=[key]
@@ -607,7 +563,7 @@ class FacebookQuantifier():
 
         return df_complete
 
-    def write_csv(self, dataframe=None) -> None:
+    def write_csv(self, dataframe: pd.DataFrame = None) -> None:
         """Take Pandas DataFrame and create CSV file.
 
         Expects a DataFrame based on the object's data.
@@ -629,7 +585,7 @@ class FacebookQuantifier():
         list. If it is None, add attribute to 'missing_data' list.
         Print results to give user an overview.
         """
-        exclude = ["folder", "user"]
+        exclude = ["folder", "user", "json_files"]
         data_points = [
             data for data in self.__dict__
             if data not in exclude
@@ -662,7 +618,7 @@ class FacebookQuantifier():
             )
 
 
-def setup():
+def setup() -> None:
     """Set up a FacebookQuantifier instance.
 
     If user input is provided, check it and pass to a FacebookQuantifier
@@ -695,7 +651,7 @@ def setup():
             base_folders = [Path(args.folder).expanduser()]
         else:
             print("Specified path is not a folder, please verify.")
-            exit()
+            sys.exit()
     else:
         # If no folder provided, scan current directory
         base_folders = [
@@ -709,7 +665,7 @@ def setup():
             "--folder='/path/to/folder' or make sure the Facebook data is in "
             "the same folder as the script and named 'facebook-<user name>'."
         )
-        exit()
+        sys.exit()
 
     # Check user name(s)
     if args.user and len(base_folders) > 1:
@@ -717,7 +673,7 @@ def setup():
             "Multiple data folders found but only one user name provided. "
             "Please specify folder using --folder."
         )
-        exit()
+        sys.exit()
     elif args.user and len(base_folders) == 1:
         usernames = [args.user]
     else:
@@ -733,7 +689,7 @@ def setup():
                 "a user name using the --user argument or make sure the folder "
                 "is named facebook-<user name> for automatic detection."
             )
-            exit()
+            sys.exit()
 
     # Instantiate FacebookQuantifier, summarize the data found and create CSV
     for folder, user_name in zip(base_folders, usernames):

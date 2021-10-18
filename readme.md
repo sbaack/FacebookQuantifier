@@ -27,7 +27,7 @@ On [Facebook.com](https://www.facebook.com/), go to Settings -> Your Facebook In
 
 #### 2. Install FacebookQuantifier
 
-You'll need [Python](https://www.python.org/) 3.5 or newer. Once Python is ready, clone this repository:
+You'll need [Python](https://www.python.org/) 3.9 or newer. Once Python is ready, clone this repository:
 
 ```sh
 > git clone https://github.com/sbaack/FacebookQuantifier
