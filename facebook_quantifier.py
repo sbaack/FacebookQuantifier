@@ -248,7 +248,6 @@ class FacebookQuantifier():
                     self.message_received = dates
                 if message_type == "message_received_or_sent":
                     self.message_received_or_sent = dates
-        self.write_csv_new()
 
     def get_timestamps(self, file_path: Path,
                        timestr: str = "timestamp"
