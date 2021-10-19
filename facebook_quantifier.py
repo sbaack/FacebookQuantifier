@@ -11,14 +11,14 @@ easy to analyze.
 """
 
 import argparse
+import csv
 import json
 import sys
+from collections import Counter
 from datetime import date, datetime  # 'date' used for type hints only
 from pathlib import Path
 from re import findall
-from typing import Optional
-
-import pandas as pd
+from typing import Optional, Union
 
 
 class FacebookQuantifier():
@@ -547,75 +547,103 @@ class FacebookQuantifier():
             for item in json_file['menu_items'][0]['entries']
         ]
 
-    def create_dataframe(self) -> pd.DataFrame:
-        """Combine and count detected events in a Pandas DataFrame.
+    def write_csv(self) -> None:
+        """Write CSV summarizing Facebook activities per day.
 
-        Loop through all the relevant attributes of the FacebookQuantifier
-        object and build a Pandas DataFrame. Will create a temporary
-        DataFrame (df_item) based on the value counts of each data attribute
-        and merges them with the main DataFrame df_complete using join(how="outer").
-
-        Returns:
-            DataFrame: Pandas DataFrame with dates as index and activities as
-                       columns to show how often user did what per day.
+        Crates a spreadsheet where each row represents a day (formatted Year-Month-Day)
+        and each column shows how often various activities took place on that day (for
+        example how often a message was sent on Facebook).
         """
-        # Create an empty DataFrame which we will expand in each loop
-        df_complete = pd.DataFrame()
+        # To build rows for spreadsheet, we need a list of unique dates found across
+        # all collected activities and the count of each activity per date
+        activities: list[str] = self.get_activities()
+        unique_dates: list[date] = self.get_unique_dates(activities)
+        activity_counts: dict[str, Counter] = self.get_activity_counts(activities)
 
-        # Make a list of the data attributes of the FacebookQuantifier class
-        exclude: list[str] = ["folder", "user", "json_files"]
-        data_points: list[str] = [
-            attribute for attribute in self.__dict__
-            if attribute not in exclude
-        ]
-
-        for data in data_points:
-            attribute = getattr(self, data)
-            if attribute:
-                # Turn each list into Pandas series, count values (i.e. how often
-                # an event occurred) and use attribute name as label for column
-                df_item = pd.DataFrame(
-                    pd.Series(attribute).value_counts(), columns=[data]
-                )
-                df_item.index.name = "date"
-                df_item = df_item.sort_index()
-                df_complete = df_complete.join(df_item, how="outer")
-
-        return df_complete
-
-    def write_csv(self, dataframe: pd.DataFrame = None) -> None:
-        """Take Pandas DataFrame and create CSV file.
-
-        Expects a DataFrame based on the object's data.
-
-        Args:
-            dataframe (None, optional): A Pandas DataFrame.
-        """
-        if dataframe is None:
-            print("Need a Pandas Dataframe to write data, no CSV file written.")
-        else:
-            dataframe.to_csv(f"facebook_data_{self.user}.csv")
-            print(f"\n- Saved file: facebook_data_{self.user}.csv\n")
+        with open(f"facebook_data_{self.user}.csv", 'w', newline='') as csvfile:
+            fieldnames = ["date"] + activities
+            csvwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            csvwriter.writeheader()
+            # For each unique date, create a row and check if this date can be found in
+            # each Counter item of 'activity_counts'. If yes, add count to current row.
+            # If an activity doesn't have any count on a unique date, add 'None' to row.
+            for unique_date in unique_dates:
+                row: dict[str, Union[date, Optional[int]]] = {"date": unique_date}
+                for activity, counter in activity_counts.items():
+                    for day, count in counter.items():
+                        if day == unique_date:
+                            row[activity] = count
+                    if not row.get(activity):
+                        row[activity] = None
+                csvwriter.writerow(row)
+            print(f"Saved file: facebook_data_{self.user}.csv")
 
     def summarize_data(self) -> None:
-        """Report how often each activity was found.
+        """Print overview showing how often each activity was found.
 
-        Loop through data attributes, check if attribute exists.
-        If it does, count the number of items in 'data_points'
-        list. If it is None, add attribute to 'missing_data' list.
-        Print results to give user an overview.
+        For each activity collected in current FacebookQuantifier instance, print count
+        of dates on which activity took place.
         """
-        exclude = ["folder", "user", "json_files"]
-        data_points = [
-            data for data in self.__dict__
-            if data not in exclude
-            if getattr(self, data)
-        ]
-
-        for data in data_points:
+        print("Found the following number of activities:\n")
+        for activity in self.get_activities():
             print(
-                f"\t- Number of dates found for {data}: {len(getattr(self, data))}"
+                f"- {activity}: {len(getattr(self, activity))}"
             )
+
+    def get_unique_dates(self, activities: list[str]) -> list[date]:
+        """Get unique dates across all captured activities.
+
+        Parameters
+        ----------
+        activities : list[str]
+            List of names of all collected activities in current FacebookQuantifier
+            instance.
+
+        Returns
+        -------
+        list[date]
+            List of unique dates (sorted)
+        """
+        unique_dates_set: set[date] = set(
+            [
+                date for attribute in activities
+                for date in getattr(self, attribute)
+            ]
+        )
+        return sorted(unique_dates_set)
+
+    def get_activity_counts(self, activities: list[str]) -> dict[str, Counter]:
+        """Create a dict summarizing the count of each activity per day.
+
+        Parameters
+        ----------
+        activities : list[str]
+            List of names of all collected activities in current FacebookQuantifier
+            instance.
+
+        Returns
+        -------
+        dict[str, Counter]
+            Dicts with activity names as keys and Counter objects as values. Counter
+            objects are structured as dicts with dates as keys and counts as values.
+        """
+        activity_counts: dict[str, Counter] = {}
+        for activity in activities:
+            activity_counts[activity] = Counter(getattr(self, activity))
+        return activity_counts
+
+    def get_activities(self) -> list[str]:
+        """Get a list of all captured activities.
+
+        Returns
+        -------
+        list[str]
+            List of names of all attributes of the current FacebookQuantifier instance
+            that represent activities.
+        """
+        # Exclude attributes which do not contain dates of Facebook activities
+        exclude: list[str] = ["folder", "user", "json_files"]
+        return [attribute for attribute in self.__dict__ if attribute not in exclude]
 
 
 def setup() -> None:
@@ -635,11 +663,21 @@ def setup() -> None:
         are provided, scans current directory for folders named facebook-<username>.""",
     )
     argparser.add_argument(
-        "--folder", help="Path to folder containing Facebook data."
+        "--folder",
+        "-f",
+        help="Path to folder containing Facebook data."
     )
     argparser.add_argument(
-        "--user", help="Name of the Facebook user. Used to "
-        "distinguish sent and received messages in Facebook messenger."
+        "--user",
+        "-u",
+        help="Name of the Facebook user. Used to distinguish sent and received "
+             "messages in Facebook messenger."
+    )
+    argparser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Print report listing frequency of activities found in the data."
     )
     args = argparser.parse_args()
 
@@ -693,9 +731,9 @@ def setup() -> None:
     for folder, user_name in zip(base_folders, usernames):
         print(f"Checking data in folder '{folder}' for '{user_name}'")
         facebook_data = FacebookQuantifier(folder, user_name)
-        facebook_data.summarize_data()
-        df_facebook_data = facebook_data.create_dataframe()
-        facebook_data.write_csv(df_facebook_data)
+        facebook_data.write_csv()
+        if args.verbose:
+            facebook_data.summarize_data()
 
 
 if __name__ == "__main__":

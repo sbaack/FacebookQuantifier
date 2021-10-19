@@ -13,11 +13,11 @@ The purpose of FacebookQuantifier is twofold:
 
 1. Document and understand what data Facebook allows its users to see and, more importantly, what it withholds. The data you can download by no means [contains everything Facebook knows about you](https://www.wired.com/story/whats-not-included-in-facebooks-download-your-data/), nor does it show you what information Facebook and others might gain by linking your profile information with other data points. Facebook itself and advertisers that target us are usually not interested in us individually. The value of data is "social-relational and not individual" ([Singh and Vipra 2019](https://link.springer.com/article/10.1057/s41301-019-00212-5)). In short, Facebook shows us what we did on its platform, but the value of this information is questionable as it reveals almost nothing that would help us understand how our data is being used. This project tries to better understand the limitations of how Facebook provides users their own data.
 
-2. Give users an aggregated, birds-eye view of their own Facebook usage over time. While you can download your Facebook data in a structured, machine readable format (JSON), it is organized in such a way that you cannot easily get an overview of your activities on the platform. I believe that this is helpful because Facebook and other data-driven companies are constantly trying to manipulate their users to do more on their platforms by inducing [feelings of missing out](https://theconversation.com/redesigning-social-media-platforms-to-reduce-fomo-124228) and designing for more and more engagement. In contrast, the overview gained with FacebookQuantifier can give some agency back to users and help them question what they really need Facebook for. For example, you might see that you have very few conversations with friends and mostly just view videos or click articles posted on pages you follow - perhaps you can drop Facebook altogether and visit the websites of these pages instead?
+2. At the same time, FacebookQuantifier give users an aggregated, birds-eye view of their own Facebook usage over time. While you can download your Facebook data in a structured, machine readable format (JSON), it is organized in such a way that you cannot easily get an overview of your activities on the platform. I believe that this is helpful because Facebook and other data-driven companies are constantly trying to manipulate their users to do more on their platforms by inducing [feelings of missing out](https://theconversation.com/redesigning-social-media-platforms-to-reduce-fomo-124228) and designing for more and more engagement. In contrast, the overview gained with FacebookQuantifier can give some agency back to users and help them question what they really need Facebook for. For example, you might see that you have very few conversations with friends and mostly just view videos or click articles posted on pages you follow - perhaps you can drop Facebook altogether and visit the websites of these pages instead?
 
 This project is inspired by [Hang Do Thi Duc's work](https://22-8miles.com/), especially [me and my facebook data](http://myfbdata.schloss-post.com/), [Fuzzify.me](https://chupadados.codingrights.org/en/fuzzifyme/) and [Data Selfie](https://dataselfie.it/#/about). I highly recommended to take a closer look at these projects.
 
-**FacebookQuantifier does not share your Facebook data with anyone! It reads your downloaded Facebook data locally and does not rely on submitting any information to online services.**
+**FacebookQuantifier only reads your downloaded Facebook data locally and does not rely on submitting any information to online services.**
 
 ## How to use
 
@@ -33,64 +33,54 @@ You'll need [Python](https://www.python.org/) 3.9 or newer. Once Python is ready
 > git clone https://github.com/sbaack/FacebookQuantifier
 ```
 
-[Pandas](https://pandas.pydata.org/) is required. Install this dependency from the `requirements.txt` file (preferably in a virtual environment):
-
-```sh
-> pip install -r requirements.txt
-```
-
 #### 3. Run FacebookQuantifier
 
-The easiest way to use this tool is to extract the zip file provided by Facebook into the cloned repository and run `python -m facebook_quantifier`, which will give you an output similar to this:
+The easiest way to use this tool is to extract the zip file provided by Facebook into the cloned repository and run `python -m facebook_quantifier`. FacebookQuantifier will automatically search for directories named `facebook-<username>`, which is how Facebook calls the downloadable archives. If you want to get an overview of the information that was gathered, you can add the `--verbose` or `-v` flag, which will give you an output similar to this:
 
 ```sh
-> python -m facebook_quantifier
+> python -m facebook_quantifier -v
 Checking data in folder 'facebook-exampleuser' for 'exampleuser'
+Saved file: facebook_data_exampleuser.csv
+Found the following number of activities:
 
-	- Number of dates found for added_friend: 65
-	- Number of dates found for received_friend_request: 8
-	- Number of dates found for rejected_friend_reject: 65
-	- Number of dates found for removed_friend: 120
-	- Number of dates found for installed_app: 4
-	- Number of dates found for apps_posts: 13
-	- Number of dates found for commented: 666
-	- Number of dates found for reactions: 3000
-	- Number of dates found for liked_page: 54
-	- Number of dates found for liked_external_pages: 8
-	- Number of dates found for notes: 6
-	- Number of dates found for responded_events: 44
-	- Number of dates found for event_invitations: 139
-	- Number of dates found for group_membership_activity: 14
-	- Number of dates found for group_posts: 81
-	- Number of dates found for profile_updated: 66
-	- Number of dates found for searches: 5
-	- Number of dates found for ad_interaction: 1
-	- Number of dates found for poke: 9
-	- Number of dates found for saved_item: 77
-	- Number of dates found for addressbook_entry: 11
-	- Number of dates found for own_posts_all: 3000
-	- Number of dates found for own_posts_media: 1000
-	- Number of dates found for own_posts_text_only: 1000
-	- Number of dates found for own_posts_links: 1000
-	- Number of dates found for message_sent: 7647
-	- Number of dates found for message_received: 8979
-	- Number of dates found for viewed_video: 9
-	- Number of dates found for viewed_article: 56
-	- Number of dates found for viewed_marketplace_item: 3
-	- Number of dates found for visited_profile: 21
-	- Number of dates found for visited_page: 13
-	- Number of dates found for visited_event_page: 204
-	- Number of dates found for visited_group_page: 8
-	- Number of dates found for clicked_menu_items: 27
-
-No dates found for the following attributes:
-	 - created_note, created_page, followed_sb_st, voted, others_posts_timeline
-Usually this means that Facebook claims to have no record of them.
-
-- Saved file: facebook_data_exampleuser.csv
+- added_friend: 65
+- received_friend_request: 8
+- rejected_friend_reject: 65
+- removed_friend: 120
+- installed_app: 4
+- apps_posts: 13
+- commented: 666
+- reactions: 3000
+- liked_page: 54
+- liked_external_pages: 8
+- notes: 6
+- responded_events: 44
+- event_invitations: 139
+- group_membership_activity: 14
+- group_posts: 81
+- profile_updated: 66
+- searches: 5
+- ad_interaction: 1
+- poke: 9
+- saved_item: 77
+- addressbook_entry: 11
+- own_posts_all: 3000
+- own_posts_media: 1000
+- own_posts_text_only: 1000
+- own_posts_links: 1000
+- message_sent: 7647
+- message_received: 8979
+- viewed_video: 9
+- viewed_article: 56
+- viewed_marketplace_item: 3
+- visited_profile: 21
+- visited_page: 13
+- visited_event_page: 204
+- visited_group_page: 8
+- clicked_menu_items: 27
 ```
 
-As you can see, FacebookQuantifier will produce a report detailing what activities were found and how often. It will also create a new CSV file named `facebook_data_<your user name>` which you can use for analysis/data visualization.
+A new CSV file named `facebook_data_<your user name>.csv` will be created that can used for further analysis or data visualizations.
 
 You can also specify the location of the data folder and your user name:
 
@@ -108,7 +98,7 @@ If the user name cannot be found in any message, FacebookQuantifier will just re
 
 ## What data is captured?
 
-The following activities are captured. For an overview of the data Facebook provides, see <https://www.facebook.com/help/930396167085762>.
+Facebook is constantly changing what information is included in the downloadable archive and how it is structured. Since the first publication of the FacebookQuantifier, [several data points have been changed or removed](#changes-to-the-data-provided-by-facebook). For an overview of the data Facebook provides, see <https://www.facebook.com/help/930396167085762>. At the moment, FacebookQuantifier scans for the following data points, some of which are only available in older versions of the downloadable archive:
 
 | Item                      | Description                                                                |
 |:--------------------------|:---------------------------------------------------------------------------|
@@ -156,7 +146,9 @@ The following activities are captured. For an overview of the data Facebook prov
 |                           | - visited_group_page                                                       |
 | menu_items                | User clicked an item in the user interface                                 |
 
-## Update May 2020: Changes to the data provided by Facebook
+## Changes to the data provided by Facebook
+
+### Update May 2020
 
 At some point after January 2020, Facebook removed the file 'other_people's_posts_to_your_timeline.json', which contained information about other people's post on your own timeline from the downloadable archive. This information is now only available online in [Facebook's Activity Log](https://www.facebook.com/me/allactivity). If you're lucky enough to have a copy of your data from January 2020 or earlier, make sure to keep this data. I decided to keep the code to parse this information.
 
