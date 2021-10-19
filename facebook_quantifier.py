@@ -1,14 +1,13 @@
 """Quantify Facebook user activity over time.
 
-Facebook allows users to download a copy of their own data in a
-machine readable format. This program extracts and quantifies
-information about user activity from the data Facebook provides to
-give users an aggregated, birds-eye overview of their Facebook
+Facebook allows users to download a copy of their own data in a machine readable format.
+This program extracts and quantifies information about user activity from the data
+Facebook provides to give users an aggregated, birds-eye overview of their Facebook
 activity over time.
 
-The program will produce a CSV file with dates as the index and
-events (e.g. 'message_set' or 'commented') as columns. The data is
-provided in a format that makes it easy to analyze.
+The program will produce a CSV file with dates as the index and events (e.g.
+'message_set' or 'commented') as columns. The data is provided in a format that makes it
+easy to analyze.
 """
 
 import argparse
@@ -25,12 +24,12 @@ import pandas as pd
 class FacebookQuantifier():
     """Extract and quantify events in user data provided by Facebook.
 
-    To count user activity, this class extracts timestamps found in a pre-
-    defined list of files contained in the Facebook data, marking the date
-    of varies user activities. See the list of data attributes below for
-    a full overview. Note that Facebook is continuously changing what
-    information is available in the downloadable archive and some of these
-    data attributes are only available in older versions of the archive.
+    To count user activity, this class extracts timestamps found in a pre-defined list
+    of files contained in the Facebook data, collecting dates of the various user
+    activities found in the date. See the list of data attributes below for a full
+    overview. Note that Facebook is continuously changing what information is available
+    in the downloadable archive and some of these data attributes are only available in
+    older versions of the archive.
 
     Attributes (required to instantiate object):
         folder : Path
@@ -317,12 +316,14 @@ class FacebookQuantifier():
         Loops through files in messages folder and collects timestamps
         of each file in a list, categorizing them as "sent" or "received"
         by checking whether self.user matches the field "sender_name"
-        inside each JSON file.
+        inside each JSON file. If self.user was not found in any file, only
+        return one dict named 'received_or_sent' to indicate lack of distinction.
 
         Returns:
             Optional[dict[str, list[date]]]:
                 Dict with lists of timestamps; keys are 'sent'
-                and 'received' messages
+                and 'received' messages, or 'received_or_sent'
+                if no sent messages were found
         """
         # Newer versions of downloadable archive include extra files that
         # don't contain information relevant here
@@ -430,10 +431,7 @@ class FacebookQuantifier():
         Captures when user viewed a video, an article or marketplace items.
         Note that each video viewed is listed three times in the data: 'time spend',
         'shows' and 'time viewed'. Here we only take the latter as it seems most
-        complete. Moreover, videos and marketplace items are put into categories
-        (e.g. 'Children'). To loop through all categories, we check if the key in
-        the json_file is a list - if is is, it's a category where we pull
-        timestamps.
+        complete.
 
         Args:
             file_path (Path): Path to JSON file
@@ -481,14 +479,14 @@ class FacebookQuantifier():
         return views
 
     def get_visited(self, file_path: Path) -> dict[str, list[date]]:
-        """Get timestamps for viewed profiles or page, separated by type of page.
+        """Get timestamps for views on various items like profiles.
 
         Args:
             file_path (Path): Path to JSON file
 
         Returns:
             dict[str, list[date]]:
-                Dict with lists of timestamps, keys are types of pages viewed.
+                Dict with lists of timestamps, keys are types items viewed.
         """
         json_file = self.load_file(file_path)
 
@@ -623,15 +621,13 @@ class FacebookQuantifier():
 def setup() -> None:
     """Set up a FacebookQuantifier instance.
 
-    If user input is provided, check it and pass to a FacebookQuantifier
-    instance. If no input is provided, scan current directory
-    for folders named "facebook-<username>", which is naming scheme
-    Facebook uses by default. For each folder detected, use Regex to find
-    the user name included in the folder name.
+    If no args is provided, scan current directory for folders named
+    "facebook-<username>", which is naming scheme Facebook uses by default. For
+    each folder detected, use Regex to get the user name included in the folder name.
+    Optionally, folder and user name can be provided as args.
 
-    For each pair of folder + user name, create a FacebookQuantifier
-    instance, create a Pandas DataFrame, print out a summary of findings
-    and write a CSV file.
+    For each pair of folder-user pair, create a FacebookQuantifier instance and write
+    a CSV file.
     """
     argparser = argparse.ArgumentParser(
         description="""Extracts and quantifies user activity based on the data
@@ -695,7 +691,7 @@ def setup() -> None:
 
     # Instantiate FacebookQuantifier, summarize the data found and create CSV
     for folder, user_name in zip(base_folders, usernames):
-        print(f"Checking data in folder '{folder}' for '{user_name}'\n")
+        print(f"Checking data in folder '{folder}' for '{user_name}'")
         facebook_data = FacebookQuantifier(folder, user_name)
         facebook_data.summarize_data()
         df_facebook_data = facebook_data.create_dataframe()
