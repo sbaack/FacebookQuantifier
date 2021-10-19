@@ -201,18 +201,54 @@ class FacebookQuantifier():
             # These files contain various types of events and require dedicated
             # functions in order to distinguish between those different types
             elif file.name == "your_posts_1.json":
-                self.own_posts = self.get_own_posts(file)
+                posts = self.get_own_posts(file)
+                for post_type, dates in posts.items():
+                    if post_type == "own_posts_all":
+                        self.own_posts_all = dates
+                    if post_type == "own_posts_media":
+                        self.own_posts_media = dates
+                    if post_type == "own_posts_text_only":
+                        self.own_posts_text_only = dates
+                    if post_type == "own_posts_links":
+                        self.own_posts_links = dates
             # File named differently in different versions of the archive
             elif file.name in ["viewed.json", "recently_viewed.json"]:
-                self.viewed = self.get_viewed(file)
+                views = self.get_viewed(file)
+                for view_type, dates in views.items():
+                    if view_type == "viewed_video":
+                        self.viewed_video = dates
+                    if view_type == "viewed_article":
+                        self.viewed_article = dates
+                    if view_type == "viewed_marketplace_item":
+                        self.viewed_marketplace_item = dates
             # File named differently in different version of the archive
             elif file.name in ["visited.json", "recently_visited.json"]:
-                self.visited = self.get_visited(file)
+                visited = self.get_visited(file)
+                for visited_type, dates in visited.items():
+                    if visited_type == "visited_profile":
+                        self.visited_profile = dates
+                    if visited_type == "visted_page":
+                        self.visited_page = dates
+                    if visited_type == "visited_event_page":
+                        self.visited_event_page = dates
+                    if visited_type == "visited_group_page":
+                        self.visited_group_page = dates
+                    if visited_type == "visited_marketplace":
+                        self.visited_marketplace = dates
             # Only available in older versions of the downloaded archive
             elif file.name == "menu_items.json":
                 self.clicked_menu_items = self.get_menu_items(file)
         # Messages are analyzed separately
-        self.messages = self.get_messages()
+        messages = self.get_messages()
+        if messages:
+            for message_type, dates in messages.items():
+                if message_type == "message_sent":
+                    self.message_sent = dates
+                if message_type == "message_received":
+                    self.message_received = dates
+                if message_type == "message_received_or_sent":
+                    self.message_received_or_sent = dates
+        self.write_csv_new()
 
     def get_timestamps(self, file_path: Path,
                        timestr: str = "timestamp"
@@ -341,7 +377,7 @@ class FacebookQuantifier():
 
         return messages
 
-    def get_own_posts(self, file_path: Path) -> Optional[dict[str, list[date]]]:
+    def get_own_posts(self, file_path: Path) -> dict[str, list[date]]:
         """Get timestamps for own posts, separated by type of post.
 
         To determine different types of posts (media, text only, link), turn
@@ -355,7 +391,7 @@ class FacebookQuantifier():
             file_path (Path): Path to JSON file
 
         Returns:
-            Optional[dict[str, list[date]]]:
+            dict[str, list[date]]:
                 Dict with lists of timestamps, keys are types of posts.
         """
         json_file = self.load_file(file_path)
@@ -389,7 +425,7 @@ class FacebookQuantifier():
 
         return posts
 
-    def get_viewed(self, file_path: Path) -> Optional[dict[str, list[date]]]:
+    def get_viewed(self, file_path: Path) -> dict[str, list[date]]:
         """Get timestamps for viewed items, separated by type of item.
 
         Captures when user viewed a video, an article or marketplace items.
@@ -404,7 +440,7 @@ class FacebookQuantifier():
             file_path (Path): Path to JSON file
 
         Returns:
-            Optional[dict[str, list[date]]]:
+            dict[str, list[date]]:
                 Dict with lists of timestamps, keys are types of item viewed.
         """
         json_file = self.load_file(file_path)
@@ -445,14 +481,14 @@ class FacebookQuantifier():
                     ]
         return views
 
-    def get_visited(self, file_path: Path) -> Optional[dict[str, list[date]]]:
+    def get_visited(self, file_path: Path) -> dict[str, list[date]]:
         """Get timestamps for viewed profiles or page, separated by type of page.
 
         Args:
             file_path (Path): Path to JSON file
 
         Returns:
-            Optional[dict[str, list[date]]]:
+            dict[str, list[date]]:
                 Dict with lists of timestamps, keys are types of pages viewed.
         """
         json_file = self.load_file(file_path)
@@ -498,14 +534,14 @@ class FacebookQuantifier():
 
         return visited
 
-    def get_menu_items(self, file_path: Path) -> Optional[list[date]]:
+    def get_menu_items(self, file_path: Path) -> list[date]:
         """Get timestamps for clicked menu items.
 
         Args:
             file_path (Path): Path to JSON file
 
         Returns:
-            Optional[list[date]]:
+            list[date]:
                 List of timestamps
         """
         json_file = self.load_file(file_path)
@@ -540,26 +576,14 @@ class FacebookQuantifier():
         for data in data_points:
             attribute = getattr(self, data)
             if attribute:
-                if not isinstance(attribute, dict):
-                    # If attribute is list, turn into Pandas series, count values
-                    # (i.e. how often an event occurred) and use attribute name
-                    # as label for column
-                    df_item = pd.DataFrame(
-                        pd.Series(attribute).value_counts(), columns=[data]
-                    )
-                    df_item.index.name = "date"
-                    df_item = df_item.sort_index()
-                    df_complete = df_complete.join(df_item, how="outer")
-                else:
-                    # If attribute is dict, add values of each key individually
-                    # and use dict key as label for column
-                    for key, value in attribute.items():
-                        df_item = pd.DataFrame(
-                            pd.Series(value).value_counts(), columns=[key]
-                        )
-                        df_item.index.name = "date"
-                        df_item = df_item.sort_index()
-                        df_complete = df_complete.join(df_item, how="outer")
+                # Turn each list into Pandas series, count values (i.e. how often
+                # an event occurred) and use attribute name as label for column
+                df_item = pd.DataFrame(
+                    pd.Series(attribute).value_counts(), columns=[data]
+                )
+                df_item.index.name = "date"
+                df_item = df_item.sort_index()
+                df_complete = df_complete.join(df_item, how="outer")
 
         return df_complete
 
@@ -592,29 +616,9 @@ class FacebookQuantifier():
             if getattr(self, data)
         ]
 
-        missing_data = [
-            data for data in self.__dict__
-            if data not in exclude
-            if not getattr(self, data)
-            if not isinstance(getattr(self, data), dict)
-        ]
-
         for data in data_points:
-            if not isinstance(getattr(self, data), dict):
-                print(
-                    f"\t- Number of dates found for {data}: {len(getattr(self, data))}"
-                )
-            else:
-                # If attribute is a dict, length of values
-                for item, value in getattr(self, data).items():
-                    print(
-                        f"\t- Number of dates found for {item}: {len(value)}"
-                    )
-        if missing_data:
             print(
-                "\nNo dates found for the following attributes:\n"
-                f"\t - {', '.join(missing_data)}"
-                "\nUsually this means that Facebook claims to have no record of them."
+                f"\t- Number of dates found for {data}: {len(getattr(self, data))}"
             )
 
 
