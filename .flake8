@@ -1,0 +1,3 @@
+[flake8]
+max-line-length = 88
+ignore = ANN101  # No type annotations for 'self', from flake-annotations
