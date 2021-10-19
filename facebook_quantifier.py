@@ -528,10 +528,9 @@ class FacebookQuantifier():
             # string formatted as 'Sep 20, 2014', which we're converting here
             if category['name'] == "Marketplace Visits":
                 visited["visited_marketplace"] = [
-                    datetime.strptime(item['data']['value'], '%b %d, %Y')
+                    datetime.strptime(item['data']['value'], '%b %d, %Y').date()
                     for item in category["entries"]
                 ]
-
         return visited
 
     def get_menu_items(self, file_path: Path) -> list[date]:
