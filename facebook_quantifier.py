@@ -132,6 +132,11 @@ class FacebookQuantifier():
             always has the same format, regardless of whether it was provided
             as an argument or extracted from the Facebook data folder.
         """
+        # TODO: Maybe instead of a whitelist, make a blacklist of files to ignore. For
+        # all the other files, call file-specific functions where necessary and
+        # get_timestamps for everything else. Then you just automatically name the
+        # activity after the file name and tell people to look up the Facebook page
+        # if it's unclear what it represents.
         self.folder = folder
         self.user = user.replace(" ", "").lower()
 
@@ -154,6 +159,7 @@ class FacebookQuantifier():
                 self.commented = self.get_timestamps(file)
             elif file.name == "posts_and_comments.json":
                 self.reactions = self.get_timestamps(file)
+            # Only available in older versions of the downloaded archives
             elif file.name == "other_people's_posts_to_your_timeline.json":
                 self.others_posts_timeline = self.get_timestamps(file)
             # Only available in older versions of the downloaded archive
@@ -298,7 +304,7 @@ class FacebookQuantifier():
             return None
         return timestamps
 
-    def load_file(self, file_path: Path):
+    def load_file(self, file_path: Path):  # -> JSON
         """Load data into JSON.
 
         Args:
@@ -329,9 +335,9 @@ class FacebookQuantifier():
         # don't contain information relevant here
         exclude: list[str] = ["autofill_information.json", "secret_groups.json"]
         files_messages: list[Path] = [
-            dir for dir in self.json_files
-            if Path(self.folder, 'messages') in dir.parents
-            if dir.name not in exclude
+            file for file in self.json_files
+            if Path(self.folder, 'messages') in file.parents
+            if file.name not in exclude
         ]
         if not files_messages:
             return None
@@ -446,6 +452,8 @@ class FacebookQuantifier():
 
         # Older versions of the personal data archive used a different key.
         # First check if old key available, otherwise use new key
+        # TODO: See if you can make this work without having to know the name
+        # of the key of the very first dict. E.g. with using json_file.values()
         if not json_file.get("viewed_things"):
             json_key: str = "recently_viewed"
         else:
@@ -554,8 +562,10 @@ class FacebookQuantifier():
         and each column shows how often various activities took place on that day (for
         example how often a message was sent on Facebook).
         """
-        # To build rows for spreadsheet, we need a list of unique dates found across
-        # all collected activities and the count of each activity per date
+        # To build rows for spreadsheet, we first use a sorted list of unique dates
+        # found across all collected activities. This is used as an index in the
+        # spreadsheet and makes sure that the data is sorted by date. Second, we get the
+        # count of each activity per date
         activities: list[str] = self.get_activities()
         unique_dates: list[date] = self.get_unique_dates(activities)
         activity_counts: dict[str, Counter] = self.get_activity_counts(activities)
@@ -586,9 +596,7 @@ class FacebookQuantifier():
         """
         print("Found the following number of activities:\n")
         for activity in self.get_activities():
-            print(
-                f"- {activity}: {len(getattr(self, activity))}"
-            )
+            print(f"- {activity}: {len(getattr(self, activity))}")
 
     def get_unique_dates(self, activities: list[str]) -> list[date]:
         """Get unique dates across all captured activities.
@@ -606,8 +614,8 @@ class FacebookQuantifier():
         """
         unique_dates_set: set[date] = set(
             [
-                date for attribute in activities
-                for date in getattr(self, attribute)
+                date for activity in activities
+                for date in getattr(self, activity)
             ]
         )
         return sorted(unique_dates_set)
@@ -641,12 +649,12 @@ class FacebookQuantifier():
             List of names of all attributes of the current FacebookQuantifier instance
             that represent activities.
         """
-        # Exclude attributes which do not contain dates of Facebook activities
+        # Exclude attributes that do not contain dates of Facebook activities
         exclude: list[str] = ["folder", "user", "json_files"]
         return [attribute for attribute in self.__dict__ if attribute not in exclude]
 
 
-def setup() -> None:
+def main() -> None:
     """Set up a FacebookQuantifier instance.
 
     If no args is provided, scan current directory for folders named
@@ -737,4 +745,4 @@ def setup() -> None:
 
 
 if __name__ == "__main__":
-    setup()
+    main()

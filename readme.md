@@ -29,15 +29,15 @@ On [Facebook.com](https://www.facebook.com/), go to Settings -> Your Facebook In
 
 You'll need [Python](https://www.python.org/) 3.9 or newer. Once Python is ready, clone this repository:
 
-```sh
+```bash
 > git clone https://github.com/sbaack/FacebookQuantifier
 ```
 
 #### 3. Run FacebookQuantifier
 
-The easiest way to use this tool is to extract the zip file provided by Facebook into the cloned repository and run `python -m facebook_quantifier`. FacebookQuantifier will automatically search for directories named `facebook-<username>`, which is how Facebook calls the downloadable archives. If you want to get an overview of the information that was gathered, you can add the `--verbose` or `-v` flag, which will give you an output similar to this:
+The easiest way to use this tool is to extract the zip file provided by Facebook into the cloned repository and run `python -m facebook_quantifier`. FacebookQuantifier will automatically search for directories named `facebook-<username>`, which is how Facebook names the downloadable archives. If you want to get a quick overview of the information that was gathered you can add the `--verbose` or `-v` flag, which gives you an output similar to this:
 
-```sh
+```bash
 > python -m facebook_quantifier -v
 Checking data in folder 'facebook-exampleuser' for 'exampleuser'
 Saved file: facebook_data_exampleuser.csv
@@ -80,12 +80,12 @@ Found the following number of activities:
 - clicked_menu_items: 27
 ```
 
-A new CSV file named `facebook_data_<your user name>.csv` will be created that can used for further analysis or data visualizations.
+A new CSV file named `facebook_data_<your user name>.csv` will be created that can be used for further analysis or data visualizations.
 
 You can also specify the location of the data folder and your user name:
 
-```sh
-> python -m facebook_quantifier --folder="/path/to/facebook-<user name>" --user="your user name"
+```bash
+> python -m facebook_quantifier --folder "/path/to/facebook-<user name>" --user "your user name"
 ```
 
 ## What exactly is FacebookQuantifier doing? What does it need the Facebook user name for?
